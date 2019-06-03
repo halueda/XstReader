@@ -1,163 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import os
-
-
-# In[2]:
-
-
-os.chdir('//172.17.129.234/d/gdrive/ueda-note/Outlookuファイル/recovered')
-
-
-# In[3]:
-
-
-#os.getcwd()
-
-
-# In[26]:
-
-
+import pandas as pd
+import pathlib
 import glob
-targets = glob.glob('*.csv')
-
-
-# In[5]:
-
-
-#import pandas
-#
-#
-## In[6]:
-#
-#
-#import pandas as pd
-#
-#
-## In[7]:
-#
-#
-#file='01-family.csv'
-#dir=file.replace('.csv','')
-##(file,dir)
-#
-#
-## In[8]:
-#
-#
-#data = pd.read_csv(file)
-#data
-#
-#
-## In[9]:
-#
-#
-#col=data.columns
-#(col[col.str.contains('User')],col[col.str.contains('Header')],col[col.str.contains('To')],col[col.str.contains('Subject')],col[col.str.contains('Date')],col[col.str.contains('Time')],col[col.str.contains('to')])
-#
-#
-## In[10]:
-#
-#
-## NaN check
-#data[data['TransportMessageHeaders'].isnull() ]
-#
-#
-## In[11]:
-#
-#
-#pd.set_option("display.max_rows", 200)
-#pd.set_option('max_colwidth',3000)
-#noheader0=data.loc[13,:].T
-#noheader0
-#
-#
-## In[12]:
-#
-#
-#pd.set_option('max_colwidth',1000)
-#noheader0[noheader0.str.contains('travelance').fillna(False)]
-#
-#
-## In[13]:
-#
-#
-#data.loc[10:10,('OriginalSubject', 'ClientSubmitTime','DisplayTo', 'DeferredDeliveryTime','InReplyToId')]
-#
-#
-## In[14]:
-#
-#
-#pd.set_option('max_colwidth',1000)
-#data.loc[10:10,('SentRepresentingEmailAddress')]
-#
-#
-## In[15]:
-#
-#
-#data['alt_header'] = 'Subject: ' + data['Subject'].fillna('') + '; Date: ' + data['ClientSubmitTime'].fillna('') + '; To: ' + data['DisplayTo'].fillna('')
-#data.loc[:,'alt_header']
-#
-#
-## In[16]:
-#
-#
-#pd.reset_option("display.max_rows")
-#pd.reset_option("display.max_colwidth")
-#
-#
-## In[17]:
-#
-#
-#data0=data.fillna({'TransportMessageHeaders': data['alt_header']})
-#
-#
-## In[18]:
-#
-#
-#data1 = data0.loc[:,('TransportMessageHeaders','UserEntryId')]
-#data1
-#
-#
-## In[19]:
-#
-#
-#os.makedirs(dir, exist_ok=True)
-#
-#
-## In[20]:
-#
-#
-#header = data.loc[0,'TransportMessageHeaders'].split(';')
-#header
-#
-#
-## In[21]:
-#
-#
 import re
-#header1 = []
-#cur = header[0]
-#for l in header[1:]:
-#    if re.match(r" [a-zA-Z][-_a-zA-Z0-9]*:", l) :
-#        header1.append( cur )
-#        cur = l[1:]
-#    elif re.match(r" [ \t]", l) :
-#        header1.append( cur )
-#        cur = l[1:]
-#    else :
-#        cur += ";"+l
-#header1.append( cur )
-#header1
-#
-#
-## In[22]:
-#
-#
+import datetime as dt
+import pytz
+from dateutil.tz import tzlocal
+
+def no_CtrlM( text ) :
+    # ^M をすべて除く
+    # ここでやるのが正しいのか、XstReaderでやるのが正しいのか？
+    if isinstance(text, str) :
+        text = text.replace("\r", '')
+    return text
+
 def reformat_header(header):
     header1 = []
     cur = header[0]
@@ -172,85 +31,143 @@ def reformat_header(header):
             cur += ";"+l
     header1.append( cur )
     return header1
-#
-#reformat_header(header)
-#
-#
-## In[23]:
-#
-#
-#body = data1.loc[0,'UserEntryId'].split(';')
-#body
-#
-#
-## In[24]:
-#
-#
-#index=0
-#
-#with open(os.path.join(dir, ('%03d.eml'%index)), 'wt', encoding='iso2022-jp') as fout:
-#    print( "\n".join(reformat_header(data1.loc[index,'TransportMessageHeaders'].split(';'))), file=fout)
-#    print( '', file=fout)
-#    print( "\n".join(data1.loc[index,'UserEntryId'].split(';')), file=fout)
-#
-#
-## In[25]:
-#
-#
-#os.linesep="\n"
-#for index in range(0, len(data1)):
-#    with open(os.path.join(dir, ('%03d.eml'%index)), 'wt',encoding='iso2022-jp',errors='replace') as fout:
-#        print( "\n".join(reformat_header(data1.loc[index,'TransportMessageHeaders'].split(';'))), file=fout)
-#        print( '', file=fout)
-#        print( "\n".join(data1.fillna({'UserEntryId':''}).loc[index,'UserEntryId'].split(';')), file=fout)
-#
-#
-## # メモ
-## - EntryIdの長さが短すぎる。contentではないようだ。
-#
-## In[ ]:
-#
-#
-#
-#
-#
-## In[ ]:
-#
-#
-#
-#
-#
-## In[ ]:
-#
-#
-#
-#
-#
-## In[ ]:
 
 
-import pandas as pd
+def csv2eml( f, outdir ):
 
+    sub_outdir = outdir / f.stem
 
-def csv2eml( f ):
-    dir=f.replace('.csv','')
+    columns_needed = ('Subject', 'ClientSubmitTime', 'DisplayTo', 'TransportMessageHeaders', 'DisplayCc', 'SenderEmailAddress',
+                      '0x1000', '0x1013', '0x1016', '0x1009', 'UserEntryId')
 
-    data = pd.read_csv(f)
+    data = pd.read_csv(f, parse_dates=True, infer_datetime_format=True, usecols=(lambda c: c in columns_needed) )
 
-    data['alt_header'] = 'Subject: ' + data['Subject'].fillna('') + '; Date: ' + data['ClientSubmitTime'].fillna('') + '; To: ' + data['DisplayTo'].fillna('')
+    # Subject などのカラムがないことがある。
+    for c in columns_needed:
+        if c not in data.columns :
+            data[c] = pd.np.nan
 
-    data0=data.fillna({'TransportMessageHeaders': data['alt_header']})
+    # utf-8 header encoding.
+    from email.header import Header
+    def convert_header(txt):
+        if isinstance(txt, str):
+#            txt1 = txt.encode().decode("utf-8", errors="replace")
+            header = Header(txt, 'utf-8')
+            txt2 = header.encode()
+            return txt2
+        else :
+            return ''
 
-    data1 = data0.loc[:,('TransportMessageHeaders','UserEntryId')]
+    # ここでするのがよいか？ヘッダーがないことの方が多いので、出力先でやった方がよいかも
+    # fillna だけここでやっておくという手もある data.fillna('', inplace=True)
+#    data['alt_header'] = (
+#            "Subject: " + data['Subject'].fillna('').map(convert_header) + "\n" +
+#            "Date: "    + data['ClientSubmitTime'].fillna('') +"\n" +              # Wed, 29 May 2019 03:59:29 +0000 形式じゃない...
+#            "From: "    + data['SenderEmailAddress'].fillna('') +"\n" +
+#            "Cc: "      + data['DisplayCc'].fillna('').map(convert_header) +"\n" +
+#            "To: "      + data['DisplayTo'].fillna('').map(convert_header) + "\n"  # DisplayTo は Outlook仕様で ; 区切り。emlは , 区切り。メールアドレスがない場合も多い。Exchangeスペシャルで、アドレスを変換することも考える
+#        )
+#
+#    data0=data.fillna({'TransportMessageHeaders': data['alt_header']})
 
-    os.makedirs(dir, exist_ok=True)
+    (col_plain_text,
+     col_html_base64,
+     col_html_utf8,
+     col_rtf,
+     col_header,
+     col_summary) = ( '0x1000',
+                      '0x1013',
+                      '0x1016',
+                      '0x1009',
+                      'TransportMessageHeaders',
+                      'UserEntryId')
+#    data1 = data0.loc[:, (col_plain_text, col_html_base64, col_html_utf8, col_rtf, col_header, col_summary)] # text、html(base64), html(utf-8), RTF
+#    data1 = data0
 
+#    os.makedirs(sub_outdir, exist_ok=True)
+    sub_outdir.mkdir(parents=True, exist_ok=True)
+
+    BOUNDARY="CSV2EML-3.141592653589793-2.718281828459045" # it should be make sure this does not happen in contents. Assume this never happen to occur in contents.
     os.linesep="\n"
-    for index in range(0, len(data1)):
-        with open(os.path.join(dir, ('%04d.eml'%index)), 'wt',encoding='iso2022-jp',errors='replace') as fout:
-            print( "\n".join(reformat_header(data1.loc[index,'TransportMessageHeaders'].split(';'))), file=fout)
-            print( '', file=fout)
-            print( "\n".join(data1.fillna({'UserEntryId':''}).loc[index,'UserEntryId'].split(';')), file=fout)
+    for index in range(0, len(data)):
+        a_line = data.loc[index, : ]
+        with (sub_outdir / ('%04d.eml'%index)).open( 'wt',encoding='utf-8',errors='replace') as fout:
+            # output header
+            header = a_line.TransportMessageHeaders
+#            if True :
+            if pd.isnull(header) :
+                header1 = ""
+                # ヘッダ一つずつ、if文とかで分岐しながら、convert_header() とかもかけて、header1変数に追記する。
+                if not pd.isnull(a_line.Subject) :
+                    header1 += "Subject: " + convert_header(a_line.Subject) + "\n"
+                if not pd.isnull(a_line.ClientSubmitTime) :
+                    date = dt.datetime.strptime(a_line.ClientSubmitTime, '%Y/%m/%d %H:%M:%S')
+                    date = date.replace(tzinfo=tzlocal())
+                    rfcdate = date.strftime("%a, %d %b %Y %H:%M:%S %z")
+                    header1 += "Date: " + rfcdate + "\n"
+                    # Wed, 29 May 2019 03:59:29 +0000 形式じゃない... こんな形式: 2012/10/6  7:13:30
+                if not pd.isnull(a_line.SenderEmailAddress) :
+                    header1 += "From: " + a_line.SenderEmailAddress + "\n"
+                if not pd.isnull(a_line.DisplayTo) :
+                    # DisplayTo は Outlook仕様で ; 区切り。emlは , 区切り。
+                    # メールアドレスがない場合も多い。Exchangeスペシャルで、アドレスを変換することも考える
+                    addrs = ",".join([convert_header(i) for i in a_line.DisplayTo.split(";")])
+                    header1 += "To: " + addrs + "\n"
+                if not pd.isnull(a_line.DisplayCc) :
+                    # DisplayTo は Outlook仕様で ; 区切り。emlは , 区切り。
+                    # メールアドレスがない場合も多い。Exchangeスペシャルで、アドレスを変換することも考える
+                    addrs = ",".join([convert_header(i) for i in a_line.DisplayCc.split(";")])
+                    header1 += "Cc: " + addrs + "\n"
+                header = header1
 
-for f in targets:
-    csv2eml(f)
+            print( no_CtrlM(header), file=fout, end='' )
+
+            # BOUNDARY=CSV2EML-001a1149d018653acc05655c3e96
+            # Add extra header of Content-Type: multipart/mixed; boundary="$BOUNDARY"
+            print( 'Content-Type: multipart/mixed; boundary="%s"' % (BOUNDARY ,), file=fout)
+
+            # Then  output empty line.
+            print( '', file=fout)
+
+            # Now output body of a message. It is multipart/mixed; boundary="$BOUNDARY".
+            body_exist = False
+
+            # if there is a plain text, which is a value in a column 0x10000, 
+            # then output boundary for beginning of a part
+            if ( not pd.isnull(a_line[col_plain_text])) :
+                print( '--' + BOUNDARY, file=fout)									# --$BOUNDARY
+                print( 'Content-Type: text/plain; charset="utf-8"', file=fout)		# header in a part
+                print( '', file=fout) 												# empty line
+                print( no_CtrlM(a_line[col_plain_text]), file=fout, end='') 		# content
+                body_exist = True
+
+            # if there is html body,
+            if ( not pd.isnull(a_line[col_html_base64])) :
+                print( '--' + BOUNDARY, file=fout)									# --$BOUNDARY
+                print( no_CtrlM(a_line[col_html_base64]), file=fout)		# content(header of the part and empty line is included in the content)
+                body_exist = True
+
+            # if there is RTF body,
+            if ( not pd.isnull(a_line[col_rtf])) :
+                print( '--' + BOUNDARY, file=fout)									# --$BOUNDARY
+                print( no_CtrlM(a_line[col_rtf]), file=fout)		# content(header of the part and empty line is included in the content)
+                body_exist = True
+
+            # if there is EntryId ,
+            if ( not pd.isnull(a_line[col_summary]) and not body_exist) :
+                print( '--' + BOUNDARY, file=fout)									# --$BOUNDARY
+                print( 'Content-Type: text/plain; charset="utf-8"', file=fout)		# header in a part
+                print( '', file=fout) 												# empty line
+                print( no_ctrlM(a_line[col_summary]), file=fout, end='') 			# content
+
+            # Finally, close multipart
+            # --$BOUNDARY--
+            print( '--' + BOUNDARY + '--' , file=fout)								# --$BOUNDARY--
+
+if __name__ == '__main__':
+    # just for debug. 
+    indir = pathlib.Path('c:/Users/ueda/Desktop/email-recover/recovered_20190530/')
+    targets = indir.glob( '01-*.csv' )
+
+    for f in targets:
+        csv2eml(f, indir)
