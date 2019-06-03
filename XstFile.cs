@@ -348,7 +348,8 @@ namespace XstReader
                     {
                         ReadMessageDetails(m);
                     }
-                    catch (XstException ex)
+                    //                    catch (XstException ex)
+                    catch (System.Exception ex)
                     {
                         // Ignore file exceptions to get as much as we can
                     }
@@ -397,6 +398,7 @@ namespace XstReader
 
                 if (m.RtfCompressed != null)
                 {
+                    /*
                     queue_rtf.Enqueue(new LineProp {
                         line = lines,
                         p = new Property {
@@ -405,6 +407,29 @@ namespace XstReader
                                                                             Convert.ToBase64String(m.RtfCompressed, Base64FormattingOptions.InsertLineBreaks)
                         }
                     });
+                    */
+
+                    //		Decompressしたら、単純なリッチテキストになるのでは？リッチテキストの添付ファイルとして出力する
+                    var decomp = new RtfDecompressor();
+
+                    using (System.IO.MemoryStream ms = decomp.Decompress(m.RtfCompressed, true))
+                    {
+                        ms.Position = 0;
+                        byte[] RtfBody = ms.ToArray();
+                        queue_rtf.Enqueue(new LineProp
+                        {
+                            line = lines,
+                            p = new Property
+                            {
+                                Tag = EpropertyTag.PidTagRtfCompressed,
+                                // text/richtext も application/rtf もうまくいかない。
+                                // もしかしたらBase64にしないで平文で書き出せるかも...
+                                Value = "Content-Type: text/richtext; name=\"body.rtf\"\nContent-Transfer-Encoding: base64\n\n" +
+                                         Convert.ToBase64String(RtfBody, Base64FormattingOptions.InsertLineBreaks)
+                            }
+                        });
+                    }
+
                 }
 
 
@@ -598,7 +623,8 @@ namespace XstReader
             hasValue = true;
         }
 
-        private static int valueLengthLimit = (int)Math.Pow(2, 15) - 12;
+        //private static int valueLengthLimit = (int)Math.Pow(2, 15) - 12;
+        private static int valueLengthLimit = System.Int32.MaxValue;
         private string EnforceCsvValueLengthLimit(string value)
         {
             if (value.Length < valueLengthLimit)
