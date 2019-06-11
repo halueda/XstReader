@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import os
-import pandas as pd
 import pathlib
 import glob
 import re
@@ -34,6 +33,7 @@ def reformat_header(header):
 
 
 def csv2eml( f, outdir ):
+    import pandas as pd
 
     sub_outdir = outdir / f.stem
 
