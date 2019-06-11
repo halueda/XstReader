@@ -85,37 +85,40 @@ if __name__ == '__main__':
     root.title('CSV2EML')
     root.resizable(False, False)
 
+    ### style
+    style = ttk.Style()
+    style.configure(
+        'Releaf.TFrame',
+        border=2,
+        relief = 'ridge'
+        )
+    style.configure(
+        'Releaf.TLabel',
+        border=2,
+        relief = 'ridge'
+        )
     ###
-    ### infiles_frameの作成
+    ### control_frameの作成
     ###
-    infiles_frame = ttk.Frame(root, padding=10)
-    infiles_frame.grid()
+    control_frame = ttk.Frame(root, padding=10)
+    control_frame.grid(row=0, column=4)
 
-    # 参照ボタンの作成
-    infiles_REFERENCE_button = ttk.Button(root, text=u'Reference', command=infiles_REFERENCE_button_clicked)
-    infiles_REFERENCE_button.grid(row=0, column=3)
+    # Startボタンの作成
+    buttonSTART = ttk.Button(control_frame, text='Start', command=buttonSTART_clicked)
+    buttonSTART.pack(side=LEFT)
 
-    # ラベルの作成
-    # 「ファイル」ラベルの作成
-    infiles_label_text = StringVar()
-    infiles_label_text.set('Input Files>>')
-    infiles_label = ttk.Label(infiles_frame, textvariable=infiles_label_text)
-    infiles_label.grid(row=0, column=0)
-
-    # 参照ファイルパス表示ラベルの作成
-    infiles_entry_text = StringVar()
-#    infiles_entry = ttk.Entry(infiles_frame, textvariable=infiles_entry_text, width=50)
-    infiles_entry = ttk.Label(infiles_frame, textvariable=infiles_entry_text, width=50)
-    infiles_entry.grid(row=0, column=2)
+#    # Cancelボタンの作成
+#    buttonCANCEL = ttk.Button(control_frame, text='Cancel', command=quit)
+#    buttonCANCEL.pack(side=LEFT)
 
     ###
     ### outdir_frameの作成
     ###
-    outdir_frame = ttk.Frame(root, padding=10)
+    outdir_frame = ttk.Frame(root, padding=10, style='Releaf.TFrame')
     outdir_frame.grid()
 
     # 参照ボタンの作成
-    outdir_REFERENCE_button = ttk.Button(root, text=u'Reference', command=outdir_REFERENCE_button_clicked)
+    outdir_REFERENCE_button = ttk.Button(outdir_frame, text=u'Reference', command=outdir_REFERENCE_button_clicked)
     outdir_REFERENCE_button.grid(row=1, column=3)
 
     # ラベルの作成
@@ -128,23 +131,32 @@ if __name__ == '__main__':
     # 参照ファイルパス表示ラベルの作成
     outdir_entry_text = StringVar()
 #    outdir_entry = ttk.Entry(outdir_frame, textvariable=outdir_entry_text, width=50)
-    outdir_entry = ttk.Label(outdir_frame, textvariable=outdir_entry_text, width=50)
+    outdir_entry = ttk.Label(outdir_frame, textvariable=outdir_entry_text, width=50, style='Releaf.TLabel')
     outdir_entry.grid(row=1, column=2)
 
 
     ###
-    ### control_frameの作成
+    ### infiles_frameの作成
     ###
-    control_frame = ttk.Frame(root, padding=(0,5))
-    control_frame.grid(row=2)
+    infiles_frame = ttk.Frame(root, padding=10, style='Releaf.TFrame')
+    infiles_frame.grid()
 
-    # Startボタンの作成
-    buttonSTART = ttk.Button(control_frame, text='Start', command=buttonSTART_clicked)
-    buttonSTART.pack(side=LEFT)
+    # 参照ボタンの作成
+    infiles_REFERENCE_button = ttk.Button(infiles_frame, text=u'Reference', command=infiles_REFERENCE_button_clicked)
+    infiles_REFERENCE_button.grid(row=2, column=3)
 
-    # Cancelボタンの作成
-    buttonCANCEL = ttk.Button(control_frame, text='Cancel', command=quit)
-    buttonCANCEL.pack(side=LEFT)
+    # ラベルの作成
+    # 「ファイル」ラベルの作成
+    infiles_label_text = StringVar()
+    infiles_label_text.set('Input Files>>')
+    infiles_label = ttk.Label(infiles_frame, textvariable=infiles_label_text)
+    infiles_label.grid(row=2, column=0)
+
+    # 参照ファイルパス表示ラベルの作成
+    infiles_entry_text = StringVar()
+#    infiles_entry = ttk.Entry(infiles_frame, textvariable=infiles_entry_text, width=50)
+    infiles_entry = ttk.Label(infiles_frame, textvariable=infiles_entry_text, width=50, style='Releaf.TLabel')
+    infiles_entry.grid(row=2, column=2)
 
     ###
     ### 起動
